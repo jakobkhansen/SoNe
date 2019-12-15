@@ -21,7 +21,6 @@ public class Database {
         }
     }
 
-    public static boolean addUser
 
 
     public static Properties initializeSettings() {

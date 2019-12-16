@@ -48,22 +48,10 @@ public class Database {
         String username = (String) values.get("username");
         String hashed_password = (String) values.get("password");
         String salt = (String) values.get("salt");
+
         String query = "INSERT INTO users (username, hashed_password, salt) ";
         query += "VALUES (?,?,?)";
-
-        // Check if username is avalable
-        String testAvailable = "SELECT * FROM users WHERE username = ?";
         try {
-            PreparedStatement availStatement = con.prepareStatement(testAvailable);
-            availStatement.setString(1, username);
-            ResultSet available = availStatement.executeQuery();
-
-            if (available.next()) {
-                System.out.println("Username not available");
-                return false;
-            }
-
-
             // Add user
             PreparedStatement statement = con.prepareStatement(query);
             statement.setString(1, username);
@@ -72,12 +60,14 @@ public class Database {
 
             return statement.executeUpdate() == 1;
 
+        // Will return false if something goes wrong or username is taken
         } catch (SQLException e) {
             e.printStackTrace();
             return false;
         }
     }
 
+    // TODO how to authenticate a new post?
     public static boolean addPost(JSONObject values) {
         if (values.get("type") != "add_post") {
             return false;
@@ -93,6 +83,9 @@ public class Database {
             statement.setString(2, content);
 
             return statement.executeUpdate() == 1;
+
+        // Will return false if something goes wrong,
+        // the cause is most likely that the userId does not exist
         } catch (SQLException e) {
             e.printStackTrace();
             return false;

@@ -1,27 +1,103 @@
 package com.SoNe.Server;
 
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.HashMap;
 import java.util.Properties;
-import java.util.Set;
+
+import org.json.simple.JSONObject;
 
 public class Database {
 
     static Properties settings = initializeSettings();
-    static Connection databaseConnection = initializeDatabase(settings);
+    static Connection con = initializeDatabase(settings);
 
     public static void main(String[] args) {
-        Set<String> test = settings.stringPropertyNames();
-        for (String string : test) {
-            System.out.println(string);
+        HashMap<String, String> testuser = new HashMap<>();
+        testuser.put("type", "register");
+        testuser.put("username", "hanoi");
+        testuser.put("password", "hanoipassword");
+        testuser.put("salt", "testsalt");
+        JSONObject testuser_json = new JSONObject(testuser);
+
+        HashMap<String, String> testpost = new HashMap<>();
+        testpost.put("type", "add_post");
+        testpost.put("userId", "1");
+        testpost.put("content", "hællæ vloggen");
+
+        JSONObject testpost_json = new JSONObject(testpost);
+
+        System.out.println(registerUser(testuser_json));
+        System.out.println(addPost(testpost_json));
+
+
+    }
+
+    public static boolean registerUser(JSONObject values) {
+        // Correct JSON type
+        if (values.get("type") != "register") {
+            return false;
+        }
+
+        // Gather values
+        String username = (String) values.get("username");
+        String hashed_password = (String) values.get("password");
+        String salt = (String) values.get("salt");
+        String query = "INSERT INTO users (username, hashed_password, salt) ";
+        query += "VALUES (?,?,?)";
+
+        // Check if username is avalable
+        String testAvailable = "SELECT * FROM users WHERE username = ?";
+        try {
+            PreparedStatement availStatement = con.prepareStatement(testAvailable);
+            availStatement.setString(1, username);
+            ResultSet available = availStatement.executeQuery();
+
+            if (available.next()) {
+                System.out.println("Username not available");
+                return false;
+            }
+
+
+            // Add user
+            PreparedStatement statement = con.prepareStatement(query);
+            statement.setString(1, username);
+            statement.setString(2, hashed_password);
+            statement.setString(3, salt);
+
+            return statement.executeUpdate() == 1;
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
         }
     }
 
+    public static boolean addPost(JSONObject values) {
+        if (values.get("type") != "add_post") {
+            return false;
+        }
 
+        int userId = Integer.parseInt((String) values.get("userId"));
+        String content = (String) values.get("content");
+
+        String query = "INSERT INTO posts (postedbyuser, content) VALUES (?,?)";
+        try {
+            PreparedStatement statement = con.prepareStatement(query);
+            statement.setInt(1, userId);
+            statement.setString(2, content);
+
+            return statement.executeUpdate() == 1;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
 
     public static Properties initializeSettings() {
         

@@ -18,6 +18,7 @@
 Server/.project
 Server/.settings/*
 Server/target/*
+target/*
 
 # Sensitive or high-churn files
 .idea/**/dataSources/

@@ -21,16 +21,13 @@ public class ClientHandler extends Thread {
     public void run() {
         // Handle clients
 
-        String received;
-        while (true) {
-            try {
-                
-                received = dataIn.readUTF(); 
-                System.out.println(received);
-            } catch (IOException e) {
-                e.printStackTrace();
-                System.exit(1);
-            }
+        String received = null;
+        try {                
+            received = dataIn.readUTF(); 
+            System.out.println(received);
+        } catch (IOException e) {
+            e.printStackTrace();
+            System.exit(1);
         }
     }
 }

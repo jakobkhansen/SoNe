@@ -36,7 +36,7 @@
               <configuration>
                 <archive>
                   <manifest>
-                    <mainClass>com.SoNe.Server.Database</mainClass>
+                    <mainClass>com.SoNe.Server.ClientServer</mainClass>
                   </manifest>
                 </archive>
                 <descriptorRefs>

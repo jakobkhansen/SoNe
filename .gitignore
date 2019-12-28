@@ -19,6 +19,7 @@ Server/.project
 Server/.settings/*
 Server/target/*
 target/*
+Server/.classpath
 
 # Sensitive or high-churn files
 .idea/**/dataSources/

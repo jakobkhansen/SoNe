@@ -7,12 +7,6 @@ import com.lambdaworks.crypto.SCryptUtil;
 
 public class PasswordHandling {
 
-    public static void main(String[] args) {
-        String testPass = "Hello 123";
-        String testSalt = generateSalt();
-        System.out.println(hashWithSalt(testPass, testSalt));
-    }
-
     public static String generateSalt() {
         Random generator = new Random();
         byte[] salt = new byte[16];

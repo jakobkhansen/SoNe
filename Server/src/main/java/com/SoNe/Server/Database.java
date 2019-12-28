@@ -17,35 +17,6 @@ public class Database {
     static Properties settings = initializeSettings();
     static Connection con = initializeDatabase(settings);
 
-    public static void main(String[] args) {
-        HashMap<String, String> testuser = new HashMap<>();
-        testuser.put("type", "register");
-        testuser.put("username", "hanoi");
-        testuser.put("password", "hanoipassword");
-        testuser.put("salt", "testsalt");
-        JSONObject testuser_json = new JSONObject(testuser);
-
-        HashMap<String, String> testpost = new HashMap<>();
-        testpost.put("type", "add_post");
-        testpost.put("username", "hanoi");
-        testpost.put("content", "hællæ vloggen");
-
-        JSONObject testpost_json = new JSONObject(testpost);
-
-        System.out.println(registerUser(testuser_json));
-        System.out.println(addPost(testpost_json));
-
-        HashMap<String, String> testauthentication = new HashMap<>();
-        testauthentication.put("type", "authenticate");
-        testauthentication.put("username", "banoi");
-        testauthentication.put("password", "hanoipassword");
-
-        JSONObject testauthentication_json = new JSONObject(testauthentication);
-
-        System.out.println("AUTHENTICATED: " + authenticateUser(testauthentication_json));
-
-
-    }
 
     public static ResponseEnum registerUser(JSONObject values) {
         // Correct JSON type
@@ -59,12 +30,25 @@ public class Database {
         String salt = PasswordHandling.generateSalt();
         String hashed_password = PasswordHandling.hashWithSalt(password, salt);
 
-        String query = "INSERT INTO users (username, hashed_password, salt) ";
-        query += "VALUES (?,?,?)";
+
+        String usernameQuery = "SELECT count(*) FROM users WHERE username = ?";
+
+        String insertQuery = "INSERT INTO users (username, hashed_password, salt) ";
+        insertQuery += "VALUES (?,?,?)";
+
         try {
 
-            // Add user
-            PreparedStatement statement = con.prepareStatement(query);
+            // Check if username taken
+            PreparedStatement usernameStatement = con.prepareStatement(usernameQuery);
+            usernameStatement.setString(1, username);
+            ResultSet users = usernameStatement.executeQuery();
+
+            if (users.next()) {
+                return ResponseEnum.USERNAME_TAKEN;
+            }
+
+            // Username not taken, add user
+            PreparedStatement statement = con.prepareStatement(insertQuery);
             statement.setString(1, username);
             statement.setString(2, hashed_password);
             statement.setString(3, salt);
@@ -72,14 +56,11 @@ public class Database {
             int numAffected = statement.executeUpdate();
             return numAffected == 1 ? ResponseEnum.SUCCESS : ResponseEnum.SQL_ERROR;
 
-        // Will return false if something goes wrong or username is taken
         } catch (SQLException e) {
-            e.printStackTrace();
             return ResponseEnum.SQL_ERROR;
         }
     } 
 
-    // TODO how to authenticate a new post? Only call this after authentication
     public static ResponseEnum addPost(JSONObject values) {
 
         // Check for malformed JSON
@@ -131,7 +112,7 @@ public class Database {
 
         // Test if values are correct
         if (userId == -1) {
-            return ResponseEnum.USER_NON_EXISTENT;
+            return ResponseEnum.NOT_AUTHENTICATED;
         }
 
         if (salt == null || userHashedPass == null) {

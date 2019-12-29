@@ -2,8 +2,10 @@ package com.SoNe.Server;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
-import java.io.IOException;
 import java.net.Socket;
+
+import org.json.simple.parser.JSONParser;
+import org.json.simple.JSONObject;
 
 public class ClientHandler extends Thread {
     
@@ -22,12 +24,25 @@ public class ClientHandler extends Thread {
         // Handle clients
 
         String received = null;
+        JSONParser parser = new JSONParser();
         try {                
             received = dataIn.readUTF(); 
             System.out.println(received);
-        } catch (IOException e) {
+            JSONObject json = (JSONObject) parser.parse(received);
+
+            JSONObject response = ServerToDatabase.identifyFunction(json);
+            String responseString = response.toJSONString();
+
+            dataOut.writeUTF(responseString);
+
+            sock.close();
+            dataIn.close();
+            dataOut.close();
+
+        } catch (Exception e) {
             e.printStackTrace();
             System.exit(1);
         }
+
     }
 }

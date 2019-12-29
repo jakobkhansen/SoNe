@@ -6,23 +6,15 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetAddress;
 import java.net.Socket;
-import java.net.UnknownHostException;
-import java.util.HashMap;
 import java.util.Properties;
+
+import javax.net.SocketFactory;
 
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
 public class ServerComm {
-
-    public static JSONObject createJSONObj(String[] args, String[] values) {
-        HashMap<String, String> hashObj = new HashMap<>();
-        for (int i = 0; i < args.length; i++) {
-            hashObj.put(args[i], values[i]);
-        }
-        return new JSONObject(hashObj);
-    } 
 
     public static JSONObject send(DataInputStream in, DataOutputStream out, JSONObject v) {
         JSONParser parser = new JSONParser();
@@ -45,18 +37,52 @@ public class ServerComm {
         return null;
     }
 
+    public static JSONObject sendJSONToServer(JSONObject json) {
+        Socket sock = connectToServer();
+        DataInputStream in = getInputStream(sock);
+        DataOutputStream out = getOutputStream(sock);
+        
+        return send(in, out, json);
+    }
+
     public static Socket connectToServer() {
         Properties settings = getSettings();
         String ip = settings.getProperty("server_ip");
         int port = Integer.parseInt(settings.getProperty("server_port"));
         InetAddress address = null;
+
+        SocketFactory sockFac = SocketFactory.getDefault();
+        Socket socket = null;
+
         try {
             address = InetAddress.getByName(ip);
-            return new Socket(address, port);
+            socket = sockFac.createSocket(address, port);
         } catch (IOException e) {
             e.printStackTrace();
         }
-        return null;
+        return socket;
+    }
+
+    public static DataInputStream getInputStream(Socket sock) {
+        DataInputStream in = null;
+        try {
+            in = new DataInputStream(sock.getInputStream());
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return in;
+    }
+
+    public static DataOutputStream getOutputStream(Socket sock) {
+        DataOutputStream out = null;
+        try {
+            out = new DataOutputStream(sock.getOutputStream());
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return out;
     }
     
 

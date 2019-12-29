@@ -7,7 +7,6 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.HashMap;
 import java.util.Properties;
 
 import org.json.simple.JSONObject;
@@ -20,7 +19,7 @@ public class Database {
 
     public static ResponseEnum registerUser(JSONObject values) {
         // Correct JSON type
-        if (values.get("type") != "register") {
+        if (!values.get("type").equals("register")) {
             return ResponseEnum.UNEXPECTED_ERROR;
         }
 
@@ -29,9 +28,11 @@ public class Database {
         String password = (String) values.get("password");
         String salt = PasswordHandling.generateSalt();
         String hashed_password = PasswordHandling.hashWithSalt(password, salt);
+        System.out.println(username);
+        System.out.println(password);
 
 
-        String usernameQuery = "SELECT count(*) FROM users WHERE username = ?";
+        String usernameQuery = "SELECT username FROM users WHERE username = ?";
 
         String insertQuery = "INSERT INTO users (username, hashed_password, salt) ";
         insertQuery += "VALUES (?,?,?)";
@@ -54,7 +55,13 @@ public class Database {
             statement.setString(3, salt);
 
             int numAffected = statement.executeUpdate();
-            return numAffected == 1 ? ResponseEnum.SUCCESS : ResponseEnum.SQL_ERROR;
+
+            if (numAffected == 1) {
+                System.out.println("User " + username + " successfully registered.");
+                return ResponseEnum.SUCCESS;
+            } else {
+                return ResponseEnum.SQL_ERROR;
+            }
 
         } catch (SQLException e) {
             return ResponseEnum.SQL_ERROR;

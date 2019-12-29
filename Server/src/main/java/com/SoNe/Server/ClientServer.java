@@ -6,6 +6,8 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 
+import javax.net.ServerSocketFactory;
+
 /* 
     This class handles threading and establishing communication with the client
     If you are looking for the threads that handle the client requests, 
@@ -15,20 +17,17 @@ import java.net.Socket;
 public class ClientServer {
 
     public static void main(String[] args) throws IOException {
+        clearScreen();
         int portNum = Integer.parseInt(Database.settings.getProperty("server_port"));
-        ServerSocket serverSocket = null;
-        try {
-            serverSocket = new ServerSocket(portNum);
-        } catch (IOException e) {
-            e.printStackTrace();
-            System.exit(1);
-        }
+        
+        ServerSocket serverSocket = genServerSock(portNum);
 
         // Server loop
         while (true) {
 
             try {
                 Socket cSocket = serverSocket.accept();
+
                 DataInputStream dataIn = new DataInputStream(cSocket.getInputStream());
                 DataOutputStream dataOut = new DataOutputStream(cSocket.getOutputStream());
 
@@ -43,4 +42,22 @@ public class ClientServer {
             }
         }
     }
+
+    public static ServerSocket genServerSock(int portNum) {
+        ServerSocketFactory socketFac = ServerSocketFactory.getDefault();
+        ServerSocket serverSocket = null;
+        try {
+            serverSocket = socketFac.createServerSocket(portNum);
+        } catch (IOException e) {
+            e.printStackTrace();
+            System.exit(1);
+        }
+        return serverSocket;
+    } 
+
+    public static void clearScreen() {  
+        System.out.print("\033[H\033[2J");  
+        System.out.flush();  
+    }
+
 }

@@ -6,9 +6,29 @@ import org.json.simple.JSONObject;
 
 public class ServerToDatabase {
 
+    public static JSONObject identifyFunction(JSONObject values) {
+        JSONObject response = null;
+        String type = (String) values.get("type");
+
+        switch(type) {
+            case "register":
+                response = registerUser(values);
+                break;
+            case "authenticate":
+                response = authenticateUser(values);
+                break;
+            case "add_post":
+                response = addPost(values);
+                break;
+        }
+
+        return response;
+    }
+
     public static JSONObject registerUser(JSONObject values) {
 
         ResponseEnum response = Database.registerUser(values);
+        System.out.println(response);
         HashMap<String, String> returnHash = new HashMap<>();
 
         if (response == ResponseEnum.SUCCESS) {

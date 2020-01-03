@@ -22,13 +22,13 @@ public class ServerToDatabase {
                 break;
         }
 
+        System.out.println(response.toJSONString());
         return response;
     }
 
     public static JSONObject registerUser(JSONObject values) {
 
         ResponseEnum response = Database.registerUser(values);
-        System.out.println(response);
         HashMap<String, String> returnHash = new HashMap<>();
 
         if (response == ResponseEnum.SUCCESS) {

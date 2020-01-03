@@ -28,9 +28,6 @@ public class Database {
         String password = (String) values.get("password");
         String salt = PasswordHandling.generateSalt();
         String hashed_password = PasswordHandling.hashWithSalt(password, salt);
-        System.out.println(username);
-        System.out.println(password);
-
 
         String usernameQuery = "SELECT username FROM users WHERE username = ?";
 
@@ -71,13 +68,12 @@ public class Database {
     public static ResponseEnum addPost(JSONObject values) {
 
         // Check for malformed JSON
-        if (values.get("type") != "add_post") {
+        if (!values.get("type").equals("add_post")) {
             return ResponseEnum.UNEXPECTED_ERROR;
         }
 
         // Gather values
         int userId = getUserId((String) values.get("username"));
-        System.out.println("ID" + userId);
         String content = (String) values.get("content");
 
         if (userId == -1) {
@@ -104,7 +100,7 @@ public class Database {
     public static ResponseEnum authenticateUser(JSONObject values) {
 
         // Check for malformed JSON
-        if (values.get("type") != "authenticate") {
+        if (!values.get("type").equals("authenticate")) {
             return ResponseEnum.UNEXPECTED_ERROR;
         }
 
@@ -114,8 +110,6 @@ public class Database {
         int userId = getUserId(username);
         String salt = getSalt(userId);
         String userHashedPass = getHashedPass(userId);
-        System.out.println("IDTEST: " + userId);
-        System.out.println("salt: " + salt);
 
         // Test if values are correct
         if (userId == -1) {
@@ -178,7 +172,6 @@ public class Database {
             PreparedStatement statement = con.prepareStatement(query);
             statement.setString(1, username);
 
-            System.out.println("BEFORE QUERY");
             ResultSet userId = statement.executeQuery();
 
             if (userId.next() && userId.isLast()) {

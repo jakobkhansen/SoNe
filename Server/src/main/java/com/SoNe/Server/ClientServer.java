@@ -22,6 +22,7 @@ public class ClientServer {
         
         ServerSocket serverSocket = genServerSock(portNum);
 
+        System.out.println("Serving clients...");
         // Server loop
         while (true) {
 

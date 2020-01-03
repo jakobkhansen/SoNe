@@ -27,11 +27,14 @@ public class ClientHandler extends Thread {
         JSONParser parser = new JSONParser();
         try {                
             received = dataIn.readUTF(); 
-            System.out.println(received);
+            System.out.println("From client: " + received);
             JSONObject json = (JSONObject) parser.parse(received);
+
 
             JSONObject response = ServerToDatabase.identifyFunction(json);
             String responseString = response.toJSONString();
+
+            System.out.println("To client: " + responseString);
 
             dataOut.writeUTF(responseString);
 

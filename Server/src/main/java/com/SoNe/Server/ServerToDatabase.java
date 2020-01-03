@@ -20,9 +20,11 @@ public class ServerToDatabase {
             case "add_post":
                 response = addPost(values);
                 break;
+            case "all_users":
+                response = getAllUsers(values);
+
         }
 
-        System.out.println(response.toJSONString());
         return response;
     }
 
@@ -89,5 +91,20 @@ public class ServerToDatabase {
             }
         }
         return new JSONObject(returnHash);
+    }
+
+    public static JSONObject getAllUsers(JSONObject values) {
+        HashMap<String, String> returnHash = new HashMap<>();
+        String users = Database.getAllUsers();
+
+        if (users == null) {
+            returnHash.put("status", "FAILED");
+        } else {
+            returnHash.put("status", "SUCCESS");
+            returnHash.put("users", users);
+        }
+
+        return new JSONObject(returnHash);
+
     }
 }

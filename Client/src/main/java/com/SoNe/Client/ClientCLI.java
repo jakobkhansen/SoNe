@@ -97,7 +97,33 @@ public class ClientCLI {
         System.out.println("Press enter to continue.");
         scan.nextLine();
 
-        if (response.get("jj"))
+        if (response.get("status").equals("SUCCESS")) {
+            dashboard();
+        }
+    }
+
+    public static void dashboard() {
+        clearScreen();
+        System.out.println("--- Welcome to SoNe, " + username + " ---");
+        System.out.println("1. Feed\n2. My wall\n3. Users\n4. New Post");
+
+        String inp = scan.nextLine();
+
+        switch (inp) {
+            case "1":
+                break;
+            case "2":
+                displayWall(username);
+                break;
+            case "3":
+                break;
+            case "4":
+                break;
+        }
+    }
+
+    public static void displayWall(String username) {
+
     }
 
     public static void clearScreen() {  

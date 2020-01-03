@@ -7,5 +7,8 @@ public enum ResponseEnum {
     USER_NON_EXISTENT,
     SQL_ERROR,
     AUTHENTICATED,
-    NOT_AUTHENTICATED
+    NOT_AUTHENTICATED,
+    SAME_USER,
+    FOLLOWS,
+    NOT_FOLLOWS
 }

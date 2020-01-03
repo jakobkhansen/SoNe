@@ -8,6 +8,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Properties;
+import java.sql.Statement;
 
 import org.json.simple.JSONObject;
 
@@ -182,6 +183,67 @@ public class Database {
         } catch (SQLException e) {
             e.printStackTrace();
             return -1;
+        }
+    }
+
+    public static String getAllUsers() {
+        String query = "SELECT username FROM users";
+        Statement statement = null;
+        String users = null;
+
+        try {
+            statement = con.createStatement();
+            ResultSet rs = statement.executeQuery(query); 
+
+            users = "";
+
+            while (rs.next()) {
+                users += rs.getString(1) + ",";
+            }
+            if (users.length() > 0) {
+                users = users.substring(0, users.length() - 1);
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } 
+
+        return users;
+    }  
+
+    public static ResponseEnum followCheck(JSONObject values) {
+
+        if (!values.get("type").equals("follow_check")) {
+            return ResponseEnum.UNEXPECTED_ERROR;
+        }
+
+        int userId1 = getUserId((String) values.get("username1"));
+        int userId2 = getUserId((String) values.get("username2"));
+
+        if (userId1 == userId2) {
+            return ResponseEnum.SAME_USER;
+        }
+
+        String query = "SELECT * FROM following WHERE user1id = ? AND user2id = ?";
+        ResultSet rs = null;
+        
+        try {
+            PreparedStatement statement = con.prepareStatement(query);
+            rs = statement.executeQuery(); 
+
+            if (rs.next()) {
+                if (rs.isLast()) {
+                    return ResponseEnum.FOLLOWS;
+                }
+                return ResponseEnum.UNEXPECTED_ERROR;
+
+            }
+            return ResponseEnum.NOT_FOLLOWS;
+
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return ResponseEnum.SQL_ERROR;
         }
     }
 

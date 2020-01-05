@@ -17,12 +17,21 @@ public class ServerToDatabase {
             case "authenticate":
                 response = authenticateUser(values);
                 break;
+            case "follow":
+                response = followUser(values);
+                break;
+            case "unfollow":
+                response = unfollowUser(values);
+                break;
+            case "follow_check":
+                response = checkFollow(values);
+                break;
             case "add_post":
                 response = addPost(values);
                 break;
             case "all_users":
                 response = getAllUsers(values);
-
+                break;
         }
 
         return response;
@@ -72,7 +81,9 @@ public class ServerToDatabase {
 
     public static JSONObject addPost(JSONObject values) {
         HashMap<String, String> returnHash = new HashMap<>();
-        ResponseEnum authResponse = Database.authenticateUser(values);
+
+        JSONObject auth = genAuthenticateObject(values);
+        ResponseEnum authResponse = Database.authenticateUser(auth);
         
         if (authResponse != ResponseEnum.AUTHENTICATED) {
             returnHash.put("status", "FAILED");
@@ -106,5 +117,84 @@ public class ServerToDatabase {
 
         return new JSONObject(returnHash);
 
+    }
+
+    public static JSONObject followUser(JSONObject values) {
+        JSONObject auth = genAuthenticateObject(values);
+        ResponseEnum authResponse = Database.authenticateUser(auth);
+
+
+        HashMap<String, String> returnHash = new HashMap<>();
+
+        if (authResponse != ResponseEnum.AUTHENTICATED) {
+            returnHash.put("status", "FAILED");
+            returnHash.put("message", "Could not authenticate...");
+        } else {
+            ResponseEnum followResponse = Database.follow(values);
+
+            if (followResponse == ResponseEnum.SUCCESS) {
+                returnHash.put("status", "SUCCESS");
+            }
+            
+            if (followResponse == ResponseEnum.SQL_ERROR) {
+                returnHash.put("status", "FAILED");
+                returnHash.put("message", "Database could not process this request...");
+            }
+        }
+
+        return new JSONObject(returnHash);
+    }
+
+    public static JSONObject unfollowUser(JSONObject values) {
+        JSONObject auth = genAuthenticateObject(values);
+        ResponseEnum authResponse = Database.authenticateUser(auth);
+
+
+        HashMap<String, String> returnHash = new HashMap<>();
+
+        if (authResponse != ResponseEnum.AUTHENTICATED) {
+            returnHash.put("status", "FAILED");
+            returnHash.put("message", "Could not authenticate...");
+        } else {
+            ResponseEnum followResponse = Database.unfollow(values);
+
+            if (followResponse == ResponseEnum.SUCCESS) {
+                returnHash.put("status", "SUCCESS");
+            }
+            
+            if (followResponse == ResponseEnum.SQL_ERROR) {
+                returnHash.put("status", "FAILED");
+                returnHash.put("message", "Database could not process this request...");
+            }
+        }
+
+        return new JSONObject(returnHash);
+
+    }
+
+    // Should users be authenticated before checking follow? Probably unnecessary
+    public static JSONObject checkFollow(JSONObject values) {
+        HashMap<String, String> returnHash = new HashMap<>();
+        ResponseEnum check = Database.followCheck(values);
+        
+        if (check == ResponseEnum.SQL_ERROR) {
+            returnHash.put("status", "FAILED");
+            returnHash.put("message", "Trouble connecting to the database, try later.");
+        } else {
+            returnHash.put("status", "SUCCESS");
+            returnHash.put("follow_check", check.name());
+        } 
+
+        return new JSONObject(returnHash);
+    }
+
+    public static JSONObject genAuthenticateObject(JSONObject values) {
+        HashMap<String, String> hashVal = new HashMap<>();
+
+        hashVal.put("type", "authenticate");
+        hashVal.put("username", (String) values.get("username_auth"));
+        hashVal.put("password", (String) values.get("password_auth"));
+
+        return new JSONObject(hashVal);
     }
 }

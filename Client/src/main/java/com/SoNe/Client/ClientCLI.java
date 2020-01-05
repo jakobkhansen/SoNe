@@ -15,23 +15,15 @@ public class ClientCLI {
 
     public static void main( String[] args ) {
         mainMenu();
-
-
-
-        //Socket socket = ServerComm.connectToServer();
-        //DataInputStream in = ServerComm.getInputStream(socket);
-        //DataOutputStream out = ServerComm.getOutputStream(socket);
-
-        //out.writeUTF("Hello");
     }
 
     public static void mainMenu() {
         String inp = "";
 
         while (!inp.equals("3")) {
-            clearScreen();
+            Utils.clearScreen();
             System.out.println("--- Welcome to SoNe ---");
-            System.out.println("1. Register\n2. Login\n3. Exit");
+            System.out.println("1. Register\n2. Login\n3. Exit\n");
             System.out.print("Enter number: ");
             inp = scan.nextLine();
 
@@ -45,14 +37,14 @@ public class ClientCLI {
 
             }
         }
-        clearScreen();
+        Utils.clearScreen();
     }
 
     public static void registerMenu() {
         HashMap<String, String> hashVal = new HashMap<>();
         hashVal.put("type", "register");
 
-        clearScreen();
+        Utils.clearScreen();
         System.out.println("--- Register user ---");
 
         System.out.print("Enter desired username: ");
@@ -67,7 +59,8 @@ public class ClientCLI {
         JSONObject json = new JSONObject(hashVal);
 
         JSONObject response = ServerComm.sendJSONToServer(json);
-        clearScreen();
+
+        Utils.clearScreen();
         System.out.println((String) response.get("message"));
         System.out.println("Press enter to continue.");
         scan.nextLine();
@@ -77,7 +70,7 @@ public class ClientCLI {
         HashMap<String, String> hashVal = new HashMap<>();
         hashVal.put("type", "authenticate");
 
-        clearScreen();
+        Utils.clearScreen();
         System.out.println("--- Login ---");
 
         System.out.print("Username: ");
@@ -92,7 +85,7 @@ public class ClientCLI {
         JSONObject json = new JSONObject(hashVal);
 
         JSONObject response = ServerComm.sendJSONToServer(json);
-        clearScreen();
+        Utils.clearScreen();
         System.out.println((String) response.get("message"));
         System.out.println("Press enter to continue.");
         scan.nextLine();
@@ -103,31 +96,192 @@ public class ClientCLI {
     }
 
     public static void dashboard() {
-        clearScreen();
-        System.out.println("--- Welcome to SoNe, " + username + " ---");
-        System.out.println("1. Feed\n2. My wall\n3. Users\n4. New Post");
+        String inp = "";
 
-        String inp = scan.nextLine();
+        while (!inp.equals("5")) {
+            String menu = "1. Feed\n";
+            menu += "2. My wall\n";
+            menu += "3. Users\n";
+            menu += "4. New Post\n";
+            menu += "5. Logout";
+            Utils.clearScreen();
+            System.out.println("--- Welcome to SoNe, " + username + " ---");
+            System.out.println(menu);
+            System.out.print("\nEnter number: ");
 
-        switch (inp) {
-            case "1":
-                break;
-            case "2":
-                displayWall(username);
-                break;
-            case "3":
-                break;
-            case "4":
-                break;
+            inp = scan.nextLine();
+
+            switch (inp) {
+                case "1":
+                    break;
+                case "2":
+                    displayWall(username);
+                    break;
+                case "3":
+                    displayUsers();
+                    break;
+                case "4":
+                    break;
+            }
+        }
+        
+    }
+
+    public static void displayWall(String wall_username) {
+        String inp = "";
+        String endKey = "-1";
+
+        while (!inp.equals(endKey)) {
+
+            Utils.clearScreen();
+            System.out.println("--- " + wall_username + "'s profile ---");
+
+            String follows = checkFollow(wall_username);
+
+            String extraOptions = "";
+
+            switch (follows) {
+                case "FOLLOWS":
+                    extraOptions += "\n2. Unfollow\n3. Back";
+                    endKey = "3";
+                    break;
+                case "NOT_FOLLOWS":
+                    extraOptions += "\n2. Follow\n3. Back";
+                    endKey = "3";
+                    break;
+                default:
+                    extraOptions += "\n2. Back";
+                    endKey = "2";
+            }
+
+            System.out.println("1. View posts" + extraOptions);
+            inp = scan.nextLine();
+
+            switch (inp) {
+                case "1":
+                    break;
+                case "2":
+                    if (!username.equals(wall_username)) {
+                        String followRes = null;
+                        if (follows.equals("NOT_FOLLOWS")) {
+
+                            System.out.print("Following...");
+                            followRes = followUser(wall_username);
+                        } else if (follows.equals("FOLLOWS")) {
+
+                            System.out.print("Unfollowing...");
+                            followRes = unfollowUser(wall_username);
+                        }
+
+                        if (!followRes.equals("SUCCESS")) {
+                            System.out.println(followRes);
+                            scan.nextLine();
+                        }
+                    }
+                    
+                    break;
+            }
         }
     }
 
-    public static void displayWall(String username) {
+    public static void displayUsers() {
+        Utils.clearScreen();
+        HashMap<String, String> hashVal = new HashMap<>();
+        hashVal.put("type", "all_users");
+        JSONObject response = ServerComm.sendJSONToServer(new JSONObject(hashVal));
 
+        if (response.get("status").equals("FAILED")) {
+            System.out.print("An unexpected error occured\nPress Enter to go back.");
+            scan.nextLine();
+
+        } else {
+
+            String userString = (String) response.get("users");
+            String[] users = userString.split(";");
+
+            for (int i = 0; i < users.length; i++) {
+                System.out.println("" + (i + 1) + ": " + users[i]);
+            }
+            System.out.println("Username or number + enter to go to profile");
+            System.out.print("Enter only to go back: ");
+            String inp = scan.nextLine();
+
+            boolean isNum = Utils.isNumeral(inp);
+            boolean numInRange = false;
+
+            if (isNum) {
+                int num = Integer.parseInt(inp);
+                numInRange = num > 0 && num < users.length + 1;
+            }
+
+            if (isNum && numInRange) {
+                displayWall(users[Integer.parseInt(inp) - 1]);
+            } else if (isNum && !numInRange) {
+                Utils.clearScreen();
+                System.out.println("Number not in range... Press enter to go back");
+                scan.nextLine();
+            } else {
+                if (Utils.arrContains(inp, users)) {
+                    displayWall(inp);
+                }
+                else {
+                    System.out.println("Invalid username entered. Press enter to go back");
+                    scan.nextLine();
+                }
+            }
+        }
     }
 
-    public static void clearScreen() {  
-        System.out.print("\033[H\033[2J");  
-        System.out.flush();  
+    public static String checkFollow(String other_username) {
+        HashMap<String, String> hashVal = new HashMap<>();
+
+        hashVal.put("type", "follow_check");
+        hashVal.put("username1", username);
+        hashVal.put("username2", other_username);
+
+        JSONObject response = ServerComm.sendJSONToServer(new JSONObject(hashVal));
+        if (response.get("status").equals("FAILED")) {
+            return "ERROR";
+        }
+
+        return (String) response.get("follow_check");
+    }
+
+    public static String followUser(String other_user) {
+        HashMap<String, String> hashVal = new HashMap<>();
+
+        hashVal.put("type", "follow");
+        hashVal.put("username_auth", username);
+        hashVal.put("password_auth", password);
+        hashVal.put("user_to_follow", other_user);
+
+        JSONObject response = ServerComm.sendJSONToServer(new JSONObject(hashVal));
+
+        String status = (String) response.get("status");
+
+        if (status.equals("SUCCESS")) {
+            return "SUCCESS";
+        }
+
+        return (String) response.get("message");
+    }
+
+    public static String unfollowUser(String other_user) {
+        HashMap<String, String> hashVal = new HashMap<>();
+
+        hashVal.put("type", "unfollow");
+        hashVal.put("username_auth", username);
+        hashVal.put("password_auth", password);
+        hashVal.put("user_to_unfollow", other_user);
+
+        JSONObject response = ServerComm.sendJSONToServer(new JSONObject(hashVal));
+
+        String status = (String) response.get("status");
+
+        if (status.equals("SUCCESS")) {
+            return "SUCCESS";
+        }
+
+        return (String) response.get("message");
     }
 }

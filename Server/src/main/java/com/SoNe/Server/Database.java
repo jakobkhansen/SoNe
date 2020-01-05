@@ -19,10 +19,6 @@ public class Database {
 
 
     public static ResponseEnum registerUser(JSONObject values) {
-        // Correct JSON type
-        if (!values.get("type").equals("register")) {
-            return ResponseEnum.UNEXPECTED_ERROR;
-        }
 
         // Gather values
         String username = (String) values.get("username");
@@ -68,11 +64,6 @@ public class Database {
 
     public static ResponseEnum addPost(JSONObject values) {
 
-        // Check for malformed JSON
-        if (!values.get("type").equals("add_post")) {
-            return ResponseEnum.UNEXPECTED_ERROR;
-        }
-
         // Gather values
         int userId = getUserId((String) values.get("username"));
         String content = (String) values.get("content");
@@ -99,11 +90,6 @@ public class Database {
     }
 
     public static ResponseEnum authenticateUser(JSONObject values) {
-
-        // Check for malformed JSON
-        if (!values.get("type").equals("authenticate")) {
-            return ResponseEnum.UNEXPECTED_ERROR;
-        }
 
         // Gather values
         String username = (String) values.get("username");
@@ -198,7 +184,7 @@ public class Database {
             users = "";
 
             while (rs.next()) {
-                users += rs.getString(1) + ",";
+                users += rs.getString(1) + ";";
             }
             if (users.length() > 0) {
                 users = users.substring(0, users.length() - 1);
@@ -211,11 +197,50 @@ public class Database {
         return users;
     }  
 
-    public static ResponseEnum followCheck(JSONObject values) {
+    public static ResponseEnum follow(JSONObject values) {
+        int user1id = getUserId((String) values.get("username_auth"));
+        int user2id = getUserId((String) values.get("user_to_follow"));
 
-        if (!values.get("type").equals("follow_check")) {
-            return ResponseEnum.UNEXPECTED_ERROR;
+        String query = "INSERT INTO following (user1id, user2id) VALUES (?,?)";
+        
+        try {
+            PreparedStatement statement = con.prepareStatement(query);
+            statement.setInt(1, user1id);
+            statement.setInt(2, user2id);
+
+            int numAffected = statement.executeUpdate();
+
+            return numAffected == 1 ? ResponseEnum.SUCCESS : ResponseEnum.SQL_ERROR;
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return ResponseEnum.SQL_ERROR;
         }
+    }
+
+    public static ResponseEnum unfollow(JSONObject values) {
+        
+        int user1id = getUserId((String) values.get("username_auth"));
+        int user2id = getUserId((String) values.get("user_to_unfollow"));
+
+        String query = "DELETE FROM following WHERE user1id = ? AND user2id = ?";
+        
+        try {
+            PreparedStatement statement = con.prepareStatement(query);
+            statement.setInt(1, user1id);
+            statement.setInt(2, user2id);
+
+            int numAffected = statement.executeUpdate();
+
+            return numAffected == 1 ? ResponseEnum.SUCCESS : ResponseEnum.SQL_ERROR;
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return ResponseEnum.SQL_ERROR;
+        }
+    }
+
+    public static ResponseEnum followCheck(JSONObject values) {
 
         int userId1 = getUserId((String) values.get("username1"));
         int userId2 = getUserId((String) values.get("username2"));
@@ -229,6 +254,9 @@ public class Database {
         
         try {
             PreparedStatement statement = con.prepareStatement(query);
+            statement.setInt(1, userId1);
+            statement.setInt(2, userId2);
+
             rs = statement.executeQuery(); 
 
             if (rs.next()) {

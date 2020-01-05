@@ -14,7 +14,7 @@ import javax.net.ServerSocketFactory;
     see ClientHandler.java
 */
 
-public class ClientServer {
+public class ServerToClient {
 
     public static void main(String[] args) throws IOException {
         clearScreen();
@@ -28,6 +28,8 @@ public class ClientServer {
 
             try {
                 Socket cSocket = serverSocket.accept();
+
+                System.out.println("Connected to client at: " + cSocket.getInetAddress());
 
                 DataInputStream dataIn = new DataInputStream(cSocket.getInputStream());
                 DataOutputStream dataOut = new DataOutputStream(cSocket.getOutputStream());

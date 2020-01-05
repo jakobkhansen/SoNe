@@ -16,13 +16,13 @@ import org.json.simple.parser.ParseException;
 
 public class ServerComm {
 
-    public static JSONObject send(DataInputStream in, DataOutputStream out, JSONObject v) {
+    private static JSONObject send(DataInputStream i, DataOutputStream o, JSONObject v) {
         JSONParser parser = new JSONParser();
         String json = v.toJSONString();
         String answer = null;
         try {
-            out.writeUTF(json);
-            answer = in.readUTF();
+            o.writeUTF(json);
+            answer = i.readUTF();
 
         } catch (IOException e) {
             e.printStackTrace();
@@ -63,7 +63,7 @@ public class ServerComm {
         return socket;
     }
 
-    public static DataInputStream getInputStream(Socket sock) {
+    private static DataInputStream getInputStream(Socket sock) {
         DataInputStream in = null;
         try {
             in = new DataInputStream(sock.getInputStream());
@@ -74,7 +74,7 @@ public class ServerComm {
         return in;
     }
 
-    public static DataOutputStream getOutputStream(Socket sock) {
+    private static DataOutputStream getOutputStream(Socket sock) {
         DataOutputStream out = null;
         try {
             out = new DataOutputStream(sock.getOutputStream());
@@ -86,7 +86,7 @@ public class ServerComm {
     }
     
 
-    public static Properties getSettings() {
+    private static Properties getSettings() {
         InputStream settings_file = null;
         Properties props = new Properties();
         try {

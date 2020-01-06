@@ -1,5 +1,7 @@
 package com.SoNe.Client;
 
+import java.io.UnsupportedEncodingException;
+import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.Scanner;
 
@@ -7,7 +9,7 @@ import org.json.simple.JSONObject;
 
 public class ClientCLI {
 
-    static Scanner scan = new Scanner(System.in);
+    static Scanner scan = new Scanner(System.in, "UTF-8");
 
     // Session tokens instead? This seems unsafe
     static String username = null;
@@ -98,12 +100,13 @@ public class ClientCLI {
     public static void dashboard() {
         String inp = "";
 
-        while (!inp.equals("5")) {
+        while (!inp.equals("6")) {
             String menu = "1. Feed\n";
-            menu += "2. My wall\n";
+            menu += "2. Latest posts global\n";
             menu += "3. Users\n";
-            menu += "4. New Post\n";
-            menu += "5. Logout";
+            menu += "4. My profile\n";
+            menu += "5. New Post\n";
+            menu += "6. Logout";
             Utils.clearScreen();
             System.out.println("--- Welcome to SoNe, " + username + " ---");
             System.out.println(menu);
@@ -115,12 +118,16 @@ public class ClientCLI {
                 case "1":
                     break;
                 case "2":
-                    displayWall(username);
+                    globalPosts();
                     break;
                 case "3":
                     displayUsers();
                     break;
                 case "4":
+                    displayWall(username);
+                    break;
+                case "5":
+                    writePost();
                     break;
             }
         }
@@ -155,6 +162,7 @@ public class ClientCLI {
             }
 
             System.out.println("1. View posts" + extraOptions);
+            System.out.print("\nEnter number: ");
             inp = scan.nextLine();
 
             switch (inp) {
@@ -202,12 +210,16 @@ public class ClientCLI {
             for (int i = 0; i < users.length; i++) {
                 System.out.println("" + (i + 1) + ": " + users[i]);
             }
-            System.out.println("Username or number + enter to go to profile");
+            System.out.println("\nUsername or number to go to profile");
             System.out.print("Enter only to go back: ");
             String inp = scan.nextLine();
 
             boolean isNum = Utils.isNumeral(inp);
             boolean numInRange = false;
+
+            if (inp.equals("")) {
+                return;
+            }
 
             if (isNum) {
                 int num = Integer.parseInt(inp);
@@ -217,7 +229,6 @@ public class ClientCLI {
             if (isNum && numInRange) {
                 displayWall(users[Integer.parseInt(inp) - 1]);
             } else if (isNum && !numInRange) {
-                Utils.clearScreen();
                 System.out.println("Number not in range... Press enter to go back");
                 scan.nextLine();
             } else {
@@ -230,6 +241,43 @@ public class ClientCLI {
                 }
             }
         }
+    }
+
+    public static void writePost() {
+        Utils.clearScreen();
+        HashMap<String, String> hashVal = new HashMap<>();
+        hashVal.put("type", "add_post");
+        hashVal.put("username_auth", username);
+        hashVal.put("password_auth", password);
+        System.out.println("Write post: ");
+        String content = scan.nextLine();
+
+        try {
+            content = new String(content.getBytes(), "CP850");
+
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
+
+        Utils.clearScreen();
+        if (content.length() > 280) {
+            System.out.println("Post too long, 280 chars max.");
+
+        } else {
+            hashVal.put("content", content);
+            JSONObject response = ServerComm.sendJSONToServer(new JSONObject(hashVal));
+            System.out.println(response.get("message"));
+            scan.nextLine();
+        }
+    }
+
+    public static void globalPosts() {
+        Utils.clearScreen();
+        HashMap<String, String> test = new HashMap<>();
+        test.put("type", "global_posts");
+        JSONObject response = ServerComm.sendJSONToServer(new JSONObject(test));
+        System.out.println(response.toJSONString());
+        scan.nextLine();
     }
 
     public static String checkFollow(String other_username) {

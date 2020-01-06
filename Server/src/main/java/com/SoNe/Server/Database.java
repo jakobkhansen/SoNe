@@ -7,8 +7,9 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Properties;
 import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.Properties;
 
 import org.json.simple.JSONObject;
 
@@ -65,7 +66,7 @@ public class Database {
     public static ResponseEnum addPost(JSONObject values) {
 
         // Gather values
-        int userId = getUserId((String) values.get("username"));
+        int userId = getUserId((String) values.get("username_auth"));
         String content = (String) values.get("content");
 
         if (userId == -1) {
@@ -172,6 +173,26 @@ public class Database {
         }
     }
 
+    public static String getUsername(int userId) {
+        String query = "SELECT username FROM users WHERE userId = ?";
+
+        try {
+            PreparedStatement statement = con.prepareStatement(query);
+            statement.setInt(1, userId);
+
+            ResultSet username = statement.executeQuery();
+
+            if (username.next() && username.isLast()) {
+                return username.getString(1);
+            } else {
+                return null;
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
     public static String getAllUsers() {
         String query = "SELECT username FROM users";
         Statement statement = null;
@@ -196,6 +217,35 @@ public class Database {
 
         return users;
     }  
+
+    public static String[][] getGlobalPosts() {
+        String query = "SELECT postedbyuser, content FROM posts LIMIT 50";
+        Statement statement = null;
+        ArrayList<String[]> posts = new ArrayList<>();
+
+        try {
+            statement = con.createStatement();
+            ResultSet rs = statement.executeQuery(query);
+
+            while (rs.next()) {
+                String[] post = new String[2];
+                post[0] = getUsername(rs.getInt(1)); 
+                post[1] = rs.getString(2);
+                posts.add(post);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return null;
+        }
+
+        String[][] ret = new String[posts.size()][2];
+
+        for (int i = 0; i < ret.length; i++) {
+            ret[i][0] = posts.get(i)[0];
+            ret[i][1] = posts.get(i)[1];
+        }
+        return ret;
+    }
 
     public static ResponseEnum follow(JSONObject values) {
         int user1id = getUserId((String) values.get("username_auth"));

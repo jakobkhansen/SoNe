@@ -8,6 +8,13 @@
     <artifactId>SoNe-Server</artifactId>
     <version>1.0-SNAPSHOT</version>
 
+    <properties>
+        <project.java.version>1.8</project.java.version>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+        <file.encoding>UTF-8</file.encoding>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>org.postgresql</groupId>

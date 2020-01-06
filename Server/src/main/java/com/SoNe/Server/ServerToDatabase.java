@@ -1,7 +1,9 @@
 package com.SoNe.Server;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 
+import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
 public class ServerToDatabase {
@@ -31,6 +33,9 @@ public class ServerToDatabase {
                 break;
             case "all_users":
                 response = getAllUsers(values);
+                break;
+            case "global_posts":
+                response = getGlobalPosts(values);
                 break;
         }
 
@@ -65,7 +70,7 @@ public class ServerToDatabase {
 
         if (response == ResponseEnum.AUTHENTICATED) {
             returnHash.put("status", "SUCCESS");
-            returnHash.put("message", "Successfully authenticated user");
+            returnHash.put("message", "Successfully logged in.");
 
         } else if (response == ResponseEnum.NOT_AUTHENTICATED) {
             returnHash.put("status", "FAILED");
@@ -186,6 +191,33 @@ public class ServerToDatabase {
         } 
 
         return new JSONObject(returnHash);
+    }
+
+    @SuppressWarnings("unchecked")
+    public static JSONObject getGlobalPosts(JSONObject values) {
+        JSONObject ret = new JSONObject();
+        String[][] posts = Database.getGlobalPosts();
+        JSONArray postsJSON = new JSONArray();
+
+        if (posts == null) {
+            ret.put("status", "FAILED");
+            ret.put("message", "Could not gather posts.");
+            return ret;
+        }
+
+        ret.put("status", "SUCCESS");
+
+        for (String[] post : posts) {
+            JSONArray postArr = new JSONArray();
+            postArr.add(0, post[0]);
+            postArr.add(1, post[1]);
+            postsJSON.add(postArr);
+        }
+
+        ret.put("posts", postsJSON);
+
+        System.out.println(ret);
+        return ret;
     }
 
     public static JSONObject genAuthenticateObject(JSONObject values) {

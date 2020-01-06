@@ -1,10 +1,10 @@
 package com.SoNe.Client;
 
 import java.io.UnsupportedEncodingException;
-import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.Scanner;
 
+import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
 public class ClientCLI {
@@ -167,6 +167,7 @@ public class ClientCLI {
 
             switch (inp) {
                 case "1":
+                    userPosts(wall_username);
                     break;
                 case "2":
                     if (!username.equals(wall_username)) {
@@ -204,11 +205,10 @@ public class ClientCLI {
 
         } else {
 
-            String userString = (String) response.get("users");
-            String[] users = userString.split(";");
+            JSONArray users = (JSONArray) response.get("users");
 
-            for (int i = 0; i < users.length; i++) {
-                System.out.println("" + (i + 1) + ": " + users[i]);
+            for (int i = 0; i < users.size(); i++) {
+                System.out.println("" + (i + 1) + ": " + users.get(i));
             }
             System.out.println("\nUsername or number to go to profile");
             System.out.print("Enter only to go back: ");
@@ -223,11 +223,11 @@ public class ClientCLI {
 
             if (isNum) {
                 int num = Integer.parseInt(inp);
-                numInRange = num > 0 && num < users.length + 1;
+                numInRange = num > 0 && num < users.size() + 1;
             }
 
             if (isNum && numInRange) {
-                displayWall(users[Integer.parseInt(inp) - 1]);
+                displayWall((String) users.get(Integer.parseInt(inp) - 1));
             } else if (isNum && !numInRange) {
                 System.out.println("Number not in range... Press enter to go back");
                 scan.nextLine();
@@ -273,11 +273,43 @@ public class ClientCLI {
 
     public static void globalPosts() {
         Utils.clearScreen();
-        HashMap<String, String> test = new HashMap<>();
-        test.put("type", "global_posts");
-        JSONObject response = ServerComm.sendJSONToServer(new JSONObject(test));
-        System.out.println(response.toJSONString());
+        HashMap<String, String> request = new HashMap<>();
+        request.put("type", "global_posts");
+        JSONObject response = ServerComm.sendJSONToServer(new JSONObject(request));
+        JSONArray posts = (JSONArray) response.get("posts");
+
+        for (int i = 0; i < posts.size(); i++) {
+            JSONArray post = (JSONArray) posts.get(i);
+            printPost(post);
+        }
+
         scan.nextLine();
+    }
+
+    public static void userPosts(String posts_username) {
+        Utils.clearScreen();
+        HashMap<String, String> request = new HashMap<>();
+        request.put("type", "user_posts");
+        request.put("username", posts_username);
+
+        JSONObject response = ServerComm.sendJSONToServer(new JSONObject(request));
+        JSONArray posts = (JSONArray) response.get("posts");
+
+        for (int i = 0; i < posts.size(); i++) {
+            JSONArray post = (JSONArray) posts.get(i);
+            printPost(post);
+        }
+
+        scan.nextLine();
+    }
+
+    public static void printPost(JSONArray post) {
+        String postUsername = (String) post.get(0);
+        String content = (String) post.get(1);
+        String date = (String) post.get(2);
+
+        System.out.println(date + " " + postUsername + ": ");
+        System.out.println(content + "\n");
     }
 
     public static String checkFollow(String other_username) {

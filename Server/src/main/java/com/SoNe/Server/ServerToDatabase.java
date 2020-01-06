@@ -1,6 +1,5 @@
 package com.SoNe.Server;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 
 import org.json.simple.JSONArray;
@@ -35,7 +34,9 @@ public class ServerToDatabase {
                 response = getAllUsers(values);
                 break;
             case "global_posts":
-                response = getGlobalPosts(values);
+            case "user_posts":
+            case "followed_posts":
+                response = getPosts(values);
                 break;
         }
 
@@ -85,12 +86,12 @@ public class ServerToDatabase {
     }
 
     public static JSONObject addPost(JSONObject values) {
-        HashMap<String, String> returnHash = new HashMap<>();
 
-        JSONObject auth = genAuthenticateObject(values);
-        ResponseEnum authResponse = Database.authenticateUser(auth);
+        boolean authenticated = authenticate(values);
+
+        HashMap<String, String> returnHash = new HashMap<>();
         
-        if (authResponse != ResponseEnum.AUTHENTICATED) {
+        if (!authenticated) {
             returnHash.put("status", "FAILED");
             returnHash.put("message", "You are not authenticated.");
         } else {
@@ -109,29 +110,29 @@ public class ServerToDatabase {
         return new JSONObject(returnHash);
     }
 
+    @SuppressWarnings("unchecked")
     public static JSONObject getAllUsers(JSONObject values) {
-        HashMap<String, String> returnHash = new HashMap<>();
-        String users = Database.getAllUsers();
+        JSONObject ret = new JSONObject();
+        JSONArray users = Database.getAllUsers();
 
         if (users == null) {
-            returnHash.put("status", "FAILED");
+            ret.put("status", "FAILED");
         } else {
-            returnHash.put("status", "SUCCESS");
-            returnHash.put("users", users);
+            ret.put("status", "SUCCESS");
+            ret.put("users", users);
         }
 
-        return new JSONObject(returnHash);
+        return ret;
 
     }
 
     public static JSONObject followUser(JSONObject values) {
-        JSONObject auth = genAuthenticateObject(values);
-        ResponseEnum authResponse = Database.authenticateUser(auth);
 
+        boolean authenticated = authenticate(values);
 
         HashMap<String, String> returnHash = new HashMap<>();
 
-        if (authResponse != ResponseEnum.AUTHENTICATED) {
+        if (!authenticated) {
             returnHash.put("status", "FAILED");
             returnHash.put("message", "Could not authenticate...");
         } else {
@@ -151,13 +152,12 @@ public class ServerToDatabase {
     }
 
     public static JSONObject unfollowUser(JSONObject values) {
-        JSONObject auth = genAuthenticateObject(values);
-        ResponseEnum authResponse = Database.authenticateUser(auth);
 
+        boolean authenticated = authenticate(values);
 
         HashMap<String, String> returnHash = new HashMap<>();
 
-        if (authResponse != ResponseEnum.AUTHENTICATED) {
+        if (!authenticated) {
             returnHash.put("status", "FAILED");
             returnHash.put("message", "Could not authenticate...");
         } else {
@@ -194,10 +194,23 @@ public class ServerToDatabase {
     }
 
     @SuppressWarnings("unchecked")
-    public static JSONObject getGlobalPosts(JSONObject values) {
+    public static JSONObject getPosts(JSONObject values) {
         JSONObject ret = new JSONObject();
-        String[][] posts = Database.getGlobalPosts();
+        String type = (String) values.get("type");
+        String[][] posts = null;
         JSONArray postsJSON = new JSONArray();
+
+        switch(type) {
+            case "global_posts":
+                posts = Database.getGlobalPosts();
+                break;
+            case "user_posts":
+                posts = Database.getUserPosts((String) values.get("username"));
+                break;
+            case "followed_posts":
+                posts = Database.getFollowedPosts((String) values.get("username"));
+                break;
+        }
 
         if (posts == null) {
             ret.put("status", "FAILED");
@@ -211,12 +224,12 @@ public class ServerToDatabase {
             JSONArray postArr = new JSONArray();
             postArr.add(0, post[0]);
             postArr.add(1, post[1]);
+            postArr.add(2, post[2]);
             postsJSON.add(postArr);
         }
 
         ret.put("posts", postsJSON);
 
-        System.out.println(ret);
         return ret;
     }
 
@@ -228,5 +241,13 @@ public class ServerToDatabase {
         hashVal.put("password", (String) values.get("password_auth"));
 
         return new JSONObject(hashVal);
+    }
+
+    public static boolean authenticate(JSONObject values) {
+        JSONObject authJSON = genAuthenticateObject(values);
+        JSONObject authResponse = authenticateUser(authJSON);
+        System.out.println(authResponse.get("status"));
+
+        return authResponse.get("status").equals("SUCCESS"); 
     }
 }

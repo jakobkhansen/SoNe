@@ -11,12 +11,83 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Properties;
 
+import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
 public class Database {
 
     static Properties settings = initializeSettings();
     static Connection con = initializeDatabase(settings);
+
+    public static String[][] execRsQuery(String query, Object[] parameters) {
+        ResultSet rs = null;
+
+        try {
+            PreparedStatement statement = con.prepareStatement(query);
+
+            for (int i = 0; i < parameters.length; i++) {
+                statement.setObject(i+1, parameters[i]);
+            }
+
+            rs = statement.executeQuery();
+            return rsToArray(rs);
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    public static String[][] execRsQuery(String query) {
+        ResultSet rs = null;
+
+        try {
+            Statement statement = con.createStatement();
+
+            rs = statement.executeQuery(query);
+            return rsToArray(rs);
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    public static boolean execInsertQuery(String query, Object[] parameters) {
+        try {
+            PreparedStatement statement = con.prepareStatement(query);
+
+            for (int i = 0; i < parameters.length; i++) {
+                statement.setObject(i+1, parameters[i]);
+            }
+
+            return statement.executeUpdate() == 1;
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public static String[][] rsToArray(ResultSet rs) throws SQLException {
+        ArrayList<String[]> arrList = new ArrayList<>();
+        int numColumns = rs.getMetaData().getColumnCount();
+
+        while (rs.next()) {
+            String[] row = new String[numColumns];
+            for (int i = 0; i < numColumns; i++) {
+                row[i] = rs.getString(i+1);
+            }
+            arrList.add(row);
+        }
+
+        String[][] ret = new String[arrList.size()][numColumns];
+
+        for (int i = 0; i < ret.length; i++) {
+            ret[i] = arrList.get(i);
+        }
+        return ret;
+    }
 
 
     public static ResponseEnum registerUser(JSONObject values) {
@@ -31,36 +102,17 @@ public class Database {
 
         String insertQuery = "INSERT INTO users (username, hashed_password, salt) ";
         insertQuery += "VALUES (?,?,?)";
+        Object[] insertParams = new Object[]{username, hashed_password, salt};
 
-        try {
+        String[][] usernames = execRsQuery(usernameQuery, new Object[]{username});
 
-            // Check if username taken
-            PreparedStatement usernameStatement = con.prepareStatement(usernameQuery);
-            usernameStatement.setString(1, username);
-            ResultSet users = usernameStatement.executeQuery();
-
-            if (users.next()) {
-                return ResponseEnum.USERNAME_TAKEN;
-            }
-
-            // Username not taken, add user
-            PreparedStatement statement = con.prepareStatement(insertQuery);
-            statement.setString(1, username);
-            statement.setString(2, hashed_password);
-            statement.setString(3, salt);
-
-            int numAffected = statement.executeUpdate();
-
-            if (numAffected == 1) {
-                System.out.println("User " + username + " successfully registered.");
-                return ResponseEnum.SUCCESS;
-            } else {
-                return ResponseEnum.SQL_ERROR;
-            }
-
-        } catch (SQLException e) {
-            return ResponseEnum.SQL_ERROR;
+        if (usernames.length > 0) {
+            return ResponseEnum.USERNAME_TAKEN;
         }
+
+        boolean successful = execInsertQuery(insertQuery, insertParams);
+
+        return successful ? ResponseEnum.SUCCESS : ResponseEnum.SQL_ERROR;
     } 
 
     public static ResponseEnum addPost(JSONObject values) {
@@ -75,19 +127,9 @@ public class Database {
 
         // Execute query
         String query = "INSERT INTO posts (postedbyuser, content) VALUES (?,?)";
-        try {
-            PreparedStatement statement = con.prepareStatement(query);
-            statement.setLong(1, userId);
-            statement.setString(2, content);
+        boolean successful = execInsertQuery(query, new Object[]{userId, content});
 
-            int numAffected = statement.executeUpdate();
-
-            return numAffected == 1 ? ResponseEnum.SUCCESS : ResponseEnum.SQL_ERROR;
-
-        } catch (SQLException e) {
-            e.printStackTrace();
-            return ResponseEnum.SQL_ERROR;
-        }
+        return successful ? ResponseEnum.SUCCESS : ResponseEnum.SQL_ERROR;
     }
 
     public static ResponseEnum authenticateUser(JSONObject values) {
@@ -118,133 +160,94 @@ public class Database {
 
     public static String getSalt(int userId) {
         String query = "SELECT salt FROM users WHERE userId = ?";
-        try {
-            PreparedStatement statement = con.prepareStatement(query);
-            statement.setInt(1, userId);
+        String[][] salt = execRsQuery(query, new Object[]{userId});
 
-            ResultSet salt = statement.executeQuery();
-
-            if (salt.next() && salt.isLast()) {
-                return salt.getString(1);
-            } else {
-                return null;
-            }
-        } catch (SQLException e) {
-            return null;
+        if (salt.length == 1) {
+            return salt[0][0];
         }
+
+        return null;
     }
 
     public static String getHashedPass(int userId) {
         String query = "SELECT hashed_password FROM users WHERE userId = ?";
 
-        try {
-            PreparedStatement statement = con.prepareStatement(query);
-            statement.setInt(1, userId);
+        String[][] hashed_password = execRsQuery(query, new Object[]{userId});
 
-            ResultSet hashed_password = statement.executeQuery();
-
-            if (hashed_password.next() && hashed_password.isLast()) {
-                return hashed_password.getString(1);
-            } else {
-                return null;
-            }
-        } catch (SQLException e) {
-            return null;
+        if (hashed_password.length == 1) {
+            return hashed_password[0][0];
         }
+
+        return null;
     }
 
     public static int getUserId(String username) {
         String query = "SELECT userId FROM users WHERE username = ?";
 
-        try {
-            PreparedStatement statement = con.prepareStatement(query);
-            statement.setString(1, username);
+        String[][] userId = execRsQuery(query, new Object[]{username});
 
-            ResultSet userId = statement.executeQuery();
-
-            if (userId.next() && userId.isLast()) {
-                return userId.getInt(1);
-            } else {
-                return -1;
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-            return -1;
+        if (userId.length == 1) {
+            return Integer.parseInt(userId[0][0]);
         }
+
+        return -1;
     }
 
     public static String getUsername(int userId) {
         String query = "SELECT username FROM users WHERE userId = ?";
 
-        try {
-            PreparedStatement statement = con.prepareStatement(query);
-            statement.setInt(1, userId);
+        String[][] username = execRsQuery(query, new Object[]{userId});
 
-            ResultSet username = statement.executeQuery();
-
-            if (username.next() && username.isLast()) {
-                return username.getString(1);
-            } else {
-                return null;
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-            return null;
+        if (username.length == 1) {
+            return username[0][0];
         }
+
+        return null; 
     }
 
-    public static String getAllUsers() {
+    @SuppressWarnings("unchecked")
+    public static JSONArray getAllUsers() {
         String query = "SELECT username FROM users";
-        Statement statement = null;
-        String users = null;
 
-        try {
-            statement = con.createStatement();
-            ResultSet rs = statement.executeQuery(query); 
+        String[][] users = execRsQuery(query);
 
-            users = "";
+        JSONArray ret = new JSONArray();
+        for (String[] user : users) {
+            ret.add(user[0]);
+        }
 
-            while (rs.next()) {
-                users += rs.getString(1) + ";";
-            }
-            if (users.length() > 0) {
-                users = users.substring(0, users.length() - 1);
-            }
-
-        } catch (SQLException e) {
-            e.printStackTrace();
-        } 
-
-        return users;
+        return ret;
     }  
 
     public static String[][] getGlobalPosts() {
-        String query = "SELECT postedbyuser, content FROM posts LIMIT 50";
-        Statement statement = null;
-        ArrayList<String[]> posts = new ArrayList<>();
+        String query = "SELECT u.username, p.content, p.posted_at FROM posts AS p ";
+        query += "INNER JOIN users AS u ON (p.postedbyuser = u.userid) ";
+        query += "LIMIT 50";
 
-        try {
-            statement = con.createStatement();
-            ResultSet rs = statement.executeQuery(query);
+        String[][] ret = execRsQuery(query);
 
-            while (rs.next()) {
-                String[] post = new String[2];
-                post[0] = getUsername(rs.getInt(1)); 
-                post[1] = rs.getString(2);
-                posts.add(post);
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-            return null;
-        }
-
-        String[][] ret = new String[posts.size()][2];
-
-        for (int i = 0; i < ret.length; i++) {
-            ret[i][0] = posts.get(i)[0];
-            ret[i][1] = posts.get(i)[1];
-        }
         return ret;
+    }
+
+    public static String[][] getUserPosts(String username) {
+        String query = "SELECT u.username, p.content, p.posted_at FROM posts AS p ";
+        query += "INNER JOIN users AS u ON (p.postedbyuser = u.userid) ";
+        query += "WHERE postedbyuser = ?";
+
+        String[][] ret = execRsQuery(query, new Object[]{getUserId(username)});
+        
+        return ret;
+    }
+
+    public static String[][] getFollowedPosts(String username) {
+        String query = "SELECT p.postedbyuser, p.content, p.posted_at FROM users AS u1 ";
+        query += "INNER JOIN following AS f ON (u1.userid = f.user1id) ";
+        query += "INNER JOIN users AS u2 ON (f.user2id = u2.userid) ";
+        query += "INNER JOIN posts AS p ON (u2.userid = p.postedbyuser) ";
+        query += "WHERE u1.username = ?";
+        String[][] ret = execRsQuery(query, new Object[]{username});
+
+        return ret;   
     }
 
     public static ResponseEnum follow(JSONObject values) {
@@ -252,20 +255,12 @@ public class Database {
         int user2id = getUserId((String) values.get("user_to_follow"));
 
         String query = "INSERT INTO following (user1id, user2id) VALUES (?,?)";
+
+        boolean success = execInsertQuery(query, new Object[]{user1id, user2id});
+
         
-        try {
-            PreparedStatement statement = con.prepareStatement(query);
-            statement.setInt(1, user1id);
-            statement.setInt(2, user2id);
-
-            int numAffected = statement.executeUpdate();
-
-            return numAffected == 1 ? ResponseEnum.SUCCESS : ResponseEnum.SQL_ERROR;
-
-        } catch (SQLException e) {
-            e.printStackTrace();
-            return ResponseEnum.SQL_ERROR;
-        }
+        return success ? ResponseEnum.SUCCESS : ResponseEnum.SQL_ERROR;
+        
     }
 
     public static ResponseEnum unfollow(JSONObject values) {
@@ -274,20 +269,11 @@ public class Database {
         int user2id = getUserId((String) values.get("user_to_unfollow"));
 
         String query = "DELETE FROM following WHERE user1id = ? AND user2id = ?";
+
+        boolean successful = execInsertQuery(query, new Object[]{user1id, user2id});
+
         
-        try {
-            PreparedStatement statement = con.prepareStatement(query);
-            statement.setInt(1, user1id);
-            statement.setInt(2, user2id);
-
-            int numAffected = statement.executeUpdate();
-
-            return numAffected == 1 ? ResponseEnum.SUCCESS : ResponseEnum.SQL_ERROR;
-
-        } catch (SQLException e) {
-            e.printStackTrace();
-            return ResponseEnum.SQL_ERROR;
-        }
+        return successful ? ResponseEnum.SUCCESS : ResponseEnum.SQL_ERROR;
     }
 
     public static ResponseEnum followCheck(JSONObject values) {
@@ -300,29 +286,10 @@ public class Database {
         }
 
         String query = "SELECT * FROM following WHERE user1id = ? AND user2id = ?";
-        ResultSet rs = null;
-        
-        try {
-            PreparedStatement statement = con.prepareStatement(query);
-            statement.setInt(1, userId1);
-            statement.setInt(2, userId2);
 
-            rs = statement.executeQuery(); 
+        boolean successful = execInsertQuery(query, new Object[]{userId1, userId2});
 
-            if (rs.next()) {
-                if (rs.isLast()) {
-                    return ResponseEnum.FOLLOWS;
-                }
-                return ResponseEnum.UNEXPECTED_ERROR;
-
-            }
-            return ResponseEnum.NOT_FOLLOWS;
-
-
-        } catch (SQLException e) {
-            e.printStackTrace();
-            return ResponseEnum.SQL_ERROR;
-        }
+        return successful ? ResponseEnum.FOLLOWS : ResponseEnum.NOT_FOLLOWS;
     }
 
 

@@ -15,7 +15,7 @@ CREATE TABLE posts (
     postedByUser int REFERENCES users(userId),
     content varchar(280),
     likes int DEFAULT 0,
-    posted_at DATE DEFAULT current_date
+    posted_at TIMESTAMP DEFAULT now()::timestamp(0)
 );
 
 CREATE TABLE following (

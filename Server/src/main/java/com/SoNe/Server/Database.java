@@ -222,6 +222,7 @@ public class Database {
     public static String[][] getGlobalPosts() {
         String query = "SELECT u.username, p.content, p.posted_at FROM posts AS p ";
         query += "INNER JOIN users AS u ON (p.postedbyuser = u.userid) ";
+        query += "ORDER BY p.posted_at ASC ";
         query += "LIMIT 50";
 
         String[][] ret = execRsQuery(query);

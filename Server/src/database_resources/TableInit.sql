@@ -8,6 +8,8 @@ CREATE TABLE users (
     username text UNIQUE,
     hashed_password varchar(128),
     salt varchar(22)
+
+    CONSTRAINT USERNAME_LENGTH CHECK (length(username) > 0)
 );
 
 CREATE TABLE posts (

@@ -240,12 +240,18 @@ public class Database {
     }
 
     public static String[][] getFollowedPosts(String username) {
-        String query = "SELECT p.postedbyuser, p.content, p.posted_at FROM users AS u1 ";
+        String query = "SELECT u2.username, p.content, p.posted_at FROM users AS u1 ";
         query += "INNER JOIN following AS f ON (u1.userid = f.user1id) ";
         query += "INNER JOIN users AS u2 ON (f.user2id = u2.userid) ";
-        query += "INNER JOIN posts AS p ON (u2.userid = p.postedbyuser) ";
-        query += "WHERE u1.username = ?";
-        String[][] ret = execRsQuery(query, new Object[]{username});
+        query += "INNER JOIN posts AS p ON ";
+        query += "(u2.userid = p.postedbyuser) ";
+        query += "WHERE u1.username = ?\n";
+        query += "UNION\n";
+        query += "SELECT u.username, p.content, p.posted_at FROM posts AS p ";
+        query += "INNER JOIN users AS u ON (p.postedbyuser = u.userid) ";
+        query += "WHERE u.username = ?";
+
+        String[][] ret = execRsQuery(query, new Object[]{username, username});
 
         return ret;   
     }
@@ -285,11 +291,16 @@ public class Database {
             return ResponseEnum.SAME_USER;
         }
 
-        String query = "SELECT * FROM following WHERE user1id = ? AND user2id = ?";
+        String q = "SELECT DISTINCT * FROM following WHERE user1id = ? AND user2id = ?";
 
-        boolean successful = execInsertQuery(query, new Object[]{userId1, userId2});
+        String[][] follows = execRsQuery(q, new Object[]{userId1, userId2});
 
-        return successful ? ResponseEnum.FOLLOWS : ResponseEnum.NOT_FOLLOWS;
+
+        if (follows.length == 1) {
+            return ResponseEnum.FOLLOWS;
+        }
+
+        return ResponseEnum.NOT_FOLLOWS;
     }
 
 

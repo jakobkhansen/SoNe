@@ -50,7 +50,7 @@ public class ClientCLI {
         System.out.println("--- Register user ---");
 
         System.out.print("Enter desired username: ");
-        String regUsername = scan.nextLine();
+        String regUsername = formatUname(scan.nextLine());
 
         System.out.print("(Warning, program does not use encrypted communication between client and server yet, do not use a sensitive password)\nEnter password: ");
         String regPassword = scan.nextLine();
@@ -76,7 +76,7 @@ public class ClientCLI {
         System.out.println("--- Login ---");
 
         System.out.print("Username: ");
-        username = scan.nextLine();
+        username = formatUname(scan.nextLine());
 
         System.out.print("Password: ");
         password = scan.nextLine();
@@ -116,6 +116,7 @@ public class ClientCLI {
 
             switch (inp) {
                 case "1":
+                    displayFeed();
                     break;
                 case "2":
                     globalPosts();
@@ -193,6 +194,27 @@ public class ClientCLI {
         }
     }
 
+    public static void displayFeed() {
+        Utils.clearScreen();
+        HashMap<String, String> request = new HashMap<>();
+        request.put("type", "followed_posts");
+        request.put("username", username);
+
+        JSONObject response = ServerComm.sendJSONToServer(new JSONObject(request));
+        JSONArray posts = (JSONArray) response.get("posts");
+
+        if (posts.size() == 0) {
+            System.out.println("No posts found. Maybe you don't follow anyone?");
+        }
+
+        for (int i = 0; i < posts.size(); i++) {
+            JSONArray post = (JSONArray) posts.get(i);
+            printPost(post);
+        }
+        System.out.print("Enter to go back: ");
+        scan.nextLine();
+    }
+
     public static void displayUsers() {
         Utils.clearScreen();
         HashMap<String, String> hashVal = new HashMap<>();
@@ -252,23 +274,21 @@ public class ClientCLI {
         System.out.println("Write post: ");
         String content = scan.nextLine();
 
-        try {
-            content = new String(content.getBytes(), "CP850");
 
-        } catch (UnsupportedEncodingException e) {
-            e.printStackTrace();
-        }
+        System.out.println(content);
 
-        Utils.clearScreen();
         if (content.length() > 280) {
             System.out.println("Post too long, 280 chars max.");
 
         } else {
             hashVal.put("content", content);
+            System.out.print("Submitting post...");
             JSONObject response = ServerComm.sendJSONToServer(new JSONObject(hashVal));
+            Utils.clearScreen();
             System.out.println(response.get("message"));
-            scan.nextLine();
         }
+        System.out.print("Press enter to go back: ");
+        scan.nextLine();
     }
 
     public static void globalPosts() {
@@ -283,6 +303,7 @@ public class ClientCLI {
             printPost(post);
         }
 
+        System.out.print("Enter to go back: ");
         scan.nextLine();
     }
 
@@ -300,6 +321,7 @@ public class ClientCLI {
             printPost(post);
         }
 
+        System.out.print("Enter to go back: ");
         scan.nextLine();
     }
 
@@ -308,7 +330,7 @@ public class ClientCLI {
         String content = (String) post.get(1);
         String date = (String) post.get(2);
 
-        System.out.println(date + " " + postUsername + ": ");
+        System.out.println(postUsername + " at " + date + ": ");
         System.out.println(content + "\n");
     }
 
@@ -363,5 +385,19 @@ public class ClientCLI {
         }
 
         return (String) response.get("message");
+    }
+
+    public static String formatUname(String formatName) {
+        if (formatName.length() == 0) {
+            return formatName;
+        }
+
+        if (formatName.length() == 1) {
+            return formatName.toUpperCase();
+        }
+
+        String firstLetter = formatName.substring(0,1).toUpperCase();
+        String rest = formatName.substring(1).toLowerCase();
+        return firstLetter + rest;
     }
 }

@@ -1,6 +1,5 @@
 package com.SoNe.Client;
 
-import java.io.UnsupportedEncodingException;
 import java.util.HashMap;
 import java.util.Scanner;
 

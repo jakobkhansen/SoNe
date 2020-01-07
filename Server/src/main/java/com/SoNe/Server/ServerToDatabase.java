@@ -246,7 +246,6 @@ public class ServerToDatabase {
     public static boolean authenticate(JSONObject values) {
         JSONObject authJSON = genAuthenticateObject(values);
         JSONObject authResponse = authenticateUser(authJSON);
-        System.out.println(authResponse.get("status"));
 
         return authResponse.get("status").equals("SUCCESS"); 
     }

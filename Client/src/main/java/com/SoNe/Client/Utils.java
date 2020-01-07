@@ -3,9 +3,21 @@ package com.SoNe.Client;
 import org.json.simple.JSONArray;
 
 public class Utils {
+
+    static String os = System.getProperty("os.name").toLowerCase();
+
     public static void clearScreen() {  
-        System.out.print("\033[H\033[2J");  
-        System.out.flush();  
+        try {
+            if (os.indexOf("win") >= 0) {
+                new ProcessBuilder("cmd", "/c", "cls").inheritIO().start().waitFor();
+            } else {
+                System.out.print("\033[H\033[2J");  
+                System.out.flush();  
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     // Check if input is a string or not

@@ -4,7 +4,7 @@ Work in progress
 
 This is a simple CLI Social Network I made for fun in Java, to learn about networking and the Server-Client model.
 
-Compile both Client and Server with `mvn assembly:assembly`and launch the server or client with dependencies with `java -jar -Dfile.encoding=UTF-8 (jar-file)
+Compile both Client and Server with `mvn assembly:assembly`and launch the server or client with dependencies with `java -jar -Dfile.encoding=UTF-8 (jar-file)`
 
 Create a postgresql database and link to it in the settings file of the server (`Server/src/main/resources/settings.txt`). Also assign what port the server should communicate with the client on in this file. Use the script in `Server/src/database_resources/TableInit.sql` to create the necessary tables in the database. 
 

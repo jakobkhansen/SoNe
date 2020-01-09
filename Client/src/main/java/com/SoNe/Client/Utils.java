@@ -52,4 +52,28 @@ public class Utils {
 
         return false;
     }
+
+    public static boolean containsUsername(String username, JSONArray arr) {
+        for (int i = 0; i < arr.size(); i++) {
+            JSONArray user = (JSONArray) arr.get(i);
+            if (user.get(0).equals(username)) {
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    public static String formatUname(String formatName) {
+        if (formatName.length() == 0) {
+            return formatName;
+        }
+
+        if (formatName.length() == 1) {
+            return formatName.toUpperCase();
+        }
+
+        String firstLetter = formatName.substring(0,1).toUpperCase();
+        String rest = formatName.substring(1).toLowerCase();
+        return firstLetter + rest;
+    }
 }

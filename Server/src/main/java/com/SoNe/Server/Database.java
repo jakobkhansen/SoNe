@@ -207,17 +207,49 @@ public class Database {
 
     @SuppressWarnings("unchecked")
     public static JSONArray getAllUsers() {
-        String query = "SELECT username FROM users";
+        String query = "SELECT u.username, count(DISTINCT f.user1id) as numFollowers ";
+        query += "FROM users AS u ";
+        query += "LEFT JOIN following AS f ON (u.userid = f.user2id) ";
+        query += "GROUP BY u.username ";
+        query += "ORDER BY count(DISTINCT f.user1id) DESC";
 
         String[][] users = execRsQuery(query);
 
         JSONArray ret = new JSONArray();
         for (String[] user : users) {
-            ret.add(user[0]);
+            JSONArray userArr = new JSONArray();
+            userArr.add(user[0]);
+            userArr.add(user[1]);
+
+            ret.add(userArr);
         }
 
         return ret;
     }  
+
+    @SuppressWarnings("unchecked")
+    public static JSONArray getFollowers(String username) {
+        String query = "SELECT u.username, count(DISTINCT f.user1id) as numFollowers ";
+        query += "FROM users AS u ";
+        query += "LEFT JOIN following as f ON (u.userid = f.user1id) ";
+        query += "WHERE f.user2id = ? ";
+        query += "GROUP BY u.username ";
+        query += "ORDER BY count(DISTINCT f.user1id) DESC";
+
+        String[][] users = execRsQuery(query, new Object[]{getUserId(username)});;
+
+        JSONArray ret = new JSONArray();
+        for (String[] user : users) {
+            JSONArray userArr = new JSONArray();
+            userArr.add(user[0]);
+            userArr.add(user[1]);
+
+            ret.add(userArr);
+        }
+
+        return ret;
+
+    }
 
     public static String[][] getGlobalPosts() {
         String query = "SELECT u.username, p.content, p.posted_at FROM posts AS p ";

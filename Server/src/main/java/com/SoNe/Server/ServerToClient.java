@@ -30,7 +30,7 @@ public class ServerToClient {
             try {
                 Socket cSocket = serverSocket.accept();
 
-                System.out.println("Connected to client at: " + cSocket.getInetAddress());
+                Logging.consoleLogConnect(cSocket);
 
                 DataInputStream dataIn = new DataInputStream(cSocket.getInputStream());
                 DataOutputStream dataOut = new DataOutputStream(cSocket.getOutputStream());

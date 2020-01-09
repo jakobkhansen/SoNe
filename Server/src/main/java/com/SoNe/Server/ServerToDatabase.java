@@ -38,6 +38,9 @@ public class ServerToDatabase {
             case "followed_posts":
                 response = getPosts(values);
                 break;
+
+            case "followers":
+                response = getFollowers(values);
         }
 
         return response;
@@ -114,6 +117,24 @@ public class ServerToDatabase {
     public static JSONObject getAllUsers(JSONObject values) {
         JSONObject ret = new JSONObject();
         JSONArray users = Database.getAllUsers();
+
+        if (users == null) {
+            ret.put("status", "FAILED");
+        } else {
+            ret.put("status", "SUCCESS");
+            ret.put("users", users);
+        }
+
+        return ret;
+
+    }
+
+    @SuppressWarnings("unchecked")
+    public static JSONObject getFollowers(JSONObject values) {
+        JSONObject ret = new JSONObject();
+
+        String username = (String) values.get("username");
+        JSONArray users = Database.getFollowers(username);
 
         if (users == null) {
             ret.put("status", "FAILED");

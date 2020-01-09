@@ -19,7 +19,7 @@ public class PasswordHandling {
         String salted = password + salt;
 
         // Scrypt workload parameters
-        int N = (int) Math.pow(2, 20);
+        int N = (int) Math.pow(2, 14);
         int r = 8;
         int p = 1;
 

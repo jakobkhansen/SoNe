@@ -1,5 +1,6 @@
 package com.SoNe.Client;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Scanner;
 
@@ -49,7 +50,7 @@ public class ClientCLI {
         System.out.println("--- Register user ---");
 
         System.out.print("Enter desired username: ");
-        String regUsername = formatUname(scan.nextLine());
+        String regUsername = Utils.formatUname(scan.nextLine());
 
         System.out.print("(Warning, program does not use encrypted communication between client and server yet, do not use a sensitive password)\nEnter password: ");
         String regPassword = scan.nextLine();
@@ -75,7 +76,7 @@ public class ClientCLI {
         System.out.println("--- Login ---");
 
         System.out.print("Username: ");
-        username = formatUname(scan.nextLine());
+        username = Utils.formatUname(scan.nextLine());
 
         System.out.print("Password: ");
         password = scan.nextLine();
@@ -121,7 +122,7 @@ public class ClientCLI {
                     globalPosts();
                     break;
                 case "3":
-                    displayUsers();
+                    displayAllUsers();
                     break;
                 case "4":
                     displayWall(username);
@@ -135,59 +136,59 @@ public class ClientCLI {
     }
 
     public static void displayWall(String wall_username) {
-        String inp = "";
-        String endKey = "-1";
+        int endKey = -1;
+        int option = 0;
 
-        while (!inp.equals(endKey)) {
+        while (option != endKey) {
 
             Utils.clearScreen();
             System.out.println("--- " + wall_username + "'s profile ---");
 
+            ArrayList<String> options = new ArrayList<>();
+
+            options.add("View posts.");
+            options.add("View followers.");
+
             String follows = checkFollow(wall_username);
 
-            String extraOptions = "";
-
-            switch (follows) {
-                case "FOLLOWS":
-                    extraOptions += "\n2. Unfollow\n3. Back";
-                    endKey = "3";
-                    break;
-                case "NOT_FOLLOWS":
-                    extraOptions += "\n2. Follow\n3. Back";
-                    endKey = "3";
-                    break;
-                default:
-                    extraOptions += "\n2. Back";
-                    endKey = "2";
+            if (follows.equals("FOLLOWS")) {
+                options.add("Unfollow.");
             }
 
-            System.out.println("1. View posts" + extraOptions);
-            System.out.print("\nEnter number: ");
-            inp = scan.nextLine();
+            if (follows.equals("NOT_FOLLOWS")) {
+                options.add("Follow.");
+            }
 
-            switch (inp) {
-                case "1":
+            options.add("Back.");
+            endKey = options.size();
+
+            for (int i = 0; i < options.size(); i++) {
+                System.out.println((i + 1) + ": " + options.get(i));
+            }
+
+            System.out.print("\nEnter number: ");
+            option = Integer.parseInt(scan.nextLine());
+
+            if (option >= endKey) {
+                continue;
+            }
+
+            String choice = options.get(option - 1);
+
+            switch (choice) {
+                case "View posts.":
                     userPosts(wall_username);
                     break;
-                case "2":
-                    if (!username.equals(wall_username)) {
-                        String followRes = null;
-                        if (follows.equals("NOT_FOLLOWS")) {
-
-                            System.out.print("Following...");
-                            followRes = followUser(wall_username);
-                        } else if (follows.equals("FOLLOWS")) {
-
-                            System.out.print("Unfollowing...");
-                            followRes = unfollowUser(wall_username);
-                        }
-
-                        if (!followRes.equals("SUCCESS")) {
-                            System.out.println(followRes);
-                            scan.nextLine();
-                        }
-                    }
-                    
+                case "See followers.":
+                    displayFollowers(wall_username);
+                    break;
+                case "Follow.":
+                    System.out.print("Following...");
+                    followUser(wall_username);
+                    break;
+                case "Unfollow.":
+                    System.out.print("Unfollowing...");
+                    unfollowUser(wall_username);
                     break;
             }
         }
@@ -214,22 +215,40 @@ public class ClientCLI {
         scan.nextLine();
     }
 
-    public static void displayUsers() {
-        Utils.clearScreen();
+    public static void displayAllUsers() {
         HashMap<String, String> hashVal = new HashMap<>();
         hashVal.put("type", "all_users");
         JSONObject response = ServerComm.sendJSONToServer(new JSONObject(hashVal));
 
-        if (response.get("status").equals("FAILED")) {
+        displayUsers(response);
+    }
+
+    public static void displayFollowers(String followed_username) {
+        HashMap<String, String> hashVal = new HashMap<>();
+        hashVal.put("type", "followers");
+        hashVal.put("username", followed_username);
+        JSONObject response = ServerComm.sendJSONToServer(new JSONObject(hashVal));
+
+        displayUsers(response);
+    }
+
+    public static void displayUsers(JSONObject serverResponse) {
+        Utils.clearScreen();
+        
+        if (serverResponse.get("status").equals("FAILED")) {
             System.out.print("An unexpected error occured\nPress Enter to go back.");
             scan.nextLine();
 
         } else {
 
-            JSONArray users = (JSONArray) response.get("users");
+            JSONArray users = (JSONArray) serverResponse.get("users");
 
             for (int i = 0; i < users.size(); i++) {
-                System.out.println("" + (i + 1) + ": " + users.get(i));
+                JSONArray user = (JSONArray) users.get(i);
+                String username = (String) user.get(0);
+                String followers = (String) user.get(1);
+                String out = (i + 1) + ": " + username + ", " + followers + " followers.";
+                System.out.println(out);
             }
             System.out.println("\nUsername or number to go to profile");
             System.out.print("Enter only to go back: ");
@@ -248,12 +267,15 @@ public class ClientCLI {
             }
 
             if (isNum && numInRange) {
-                displayWall((String) users.get(Integer.parseInt(inp) - 1));
+                JSONArray user = (JSONArray) users.get(Integer.parseInt(inp) - 1);
+                displayWall((String) user.get(0));
             } else if (isNum && !numInRange) {
                 System.out.println("Number not in range... Press enter to go back");
                 scan.nextLine();
             } else {
-                if (Utils.arrContains(inp, users)) {
+                inp = Utils.formatUname(inp);
+                System.out.println(inp);
+                if (Utils.containsUsername(inp, users)) {
                     displayWall(inp);
                 }
                 else {
@@ -386,17 +408,5 @@ public class ClientCLI {
         return (String) response.get("message");
     }
 
-    public static String formatUname(String formatName) {
-        if (formatName.length() == 0) {
-            return formatName;
-        }
-
-        if (formatName.length() == 1) {
-            return formatName.toUpperCase();
-        }
-
-        String firstLetter = formatName.substring(0,1).toUpperCase();
-        String rest = formatName.substring(1).toLowerCase();
-        return firstLetter + rest;
-    }
+    
 }

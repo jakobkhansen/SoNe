@@ -1,8 +1,8 @@
 # SoNe
-CLI Social Network  
-Work in progress
 
 This is a simple CLI Social Network I made for fun in Java, to learn about networking and the Server-Client model.
+
+## Usage
 
 Compile both Client and Server with `mvn assembly:assembly`and launch the server or client with dependencies with `java -jar -Dfile.encoding=UTF-8 (jar-file)`
 

@@ -174,12 +174,13 @@ public class ClientCLI {
             }
 
             String choice = options.get(option - 1);
+            System.out.println(choice);
 
             switch (choice) {
                 case "View posts.":
                     userPosts(wall_username);
                     break;
-                case "See followers.":
+                case "View followers.":
                     displayFollowers(wall_username);
                     break;
                 case "Follow.":
